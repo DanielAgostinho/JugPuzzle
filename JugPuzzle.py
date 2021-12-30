@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
- 
-
+import tkinter as tk
+from math import ceil
 class Jug:
     def __init__(self,size,amount = 0):
         self.size = size
@@ -116,19 +116,77 @@ class Solver:
             if not pos:
                 break       
         return lines
+
+
+class Gui:
+    def __init__(self):
+        bgcolor = '#73A2FF'
+        self.ws = tk.Tk()
+        self.ws.title('PythonGuides')
+        self.ws.geometry('300x200')
+        self.ws.config(bg=bgcolor)
+        
+        self.frame = tk.Frame(self.ws,bg=bgcolor)
+
+        tk.Label(self.frame, text="Jug 1",bg=bgcolor).grid(row=0, column=0)
+        tk.Label(self.frame, text="Jug 2",bg=bgcolor).grid(row=0, column=1)
         
 
-Setj = SetOfJugs([Jug(9),Jug(5)])       
-for n in range(1,max([i.size for i in Setj.jugs]) + 1):
-    Setj.set([0]*len(Setj.jugs))
-    Solve = Solver(Setj,n)
-    solutions = Solve.solve()
+        self.jug1 = tk.Entry(self.frame)
+        self.jug1.grid(row=1, column=0)
+        self.jug2 = tk.Entry(self.frame)
+        self.jug2.grid(row=1, column=1)
 
-    for line in solutions:
-        x = [i[0] for i in line]
-        y = [i[1] for i in line]
-        plt.plot(x,y,'-*',label=len(line)-1)
+        tk.Label(self.frame, text="Goal: ",bg=bgcolor).grid(row=2, column=0)
+        self.goal = tk.Entry(self.frame)
+        self.goal.grid(row=2, column=1)
         
-    plt.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left", ncol=min(len(solutions),5))
-    plt.title(n)
-    plt.show()
+        self.errorLabel = tk.Label(self.frame, text="",fg='#FF0000',bg=bgcolor)
+        self.errorLabel.grid(row=4, column=1,columnspan=2)
+        tk.Button(self.frame, text="Solve",command=self.solve).grid(row=3, columnspan=2, sticky='ew')
+
+        
+        self.frame.pack(expand=True) 
+        self.ws.mainloop()
+
+    def solve(self):
+        self.errorLabel.config(text="")
+        jug1 = self.jug1.get()
+        jug2 = self.jug2.get()
+        goal = self.goal.get()
+        if not jug1.isnumeric() and not jug2.isnumeric():
+            
+            self.errorLabel.config(text='jug1 and jug2 are not valid')
+        elif not jug1.isnumeric() or float(jug1) <= 0:
+            self.errorLabel.config(text="jug1 is not valid")
+        elif not jug2.isnumeric() or float(jug2) <= 0:
+            self.errorLabel.config(text="jug1 is not valid")
+        else:
+            self.errorLabel.config(text=" ")
+            if len(goal) == 0 or (goal.isnumeric() and float(goal) > 0 and float(goal) <= max(float(jug1),float(jug2))):
+                if goal == '':
+                    main(int(jug1),int(jug2))
+                else:
+                    main(int(jug1),int(jug2),int(goal))
+            else:
+                self.errorLabel.config(text="Goal is not valid")
+
+def main(a,b,m=False):
+    Setj = SetOfJugs([Jug(a),Jug(b)])       
+    for n in range(1,int(ceil(max([i.size for i in Setj.jugs]) + 1))):
+        if m is not False and n != m:
+            continue
+        Setj.set([0]*len(Setj.jugs))
+        Solve = Solver(Setj,n)
+        solutions = Solve.solve()
+
+        for line in solutions:
+            x = [i[0] for i in line]
+            y = [i[1] for i in line]
+            plt.plot(x,y,'-*',label=len(line)-1)
+            
+        plt.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left", ncol=min(len(solutions),5))
+        plt.title(n)
+        plt.show()
+
+Gui()
