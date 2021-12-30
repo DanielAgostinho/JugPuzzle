@@ -112,7 +112,7 @@ class Gui:
         bgcolor = '#73A2FF'
         self.ws = Tk()
         self.ws.title('JugPuzzle')
-        self.ws.geometry('300x200')
+        self.ws.geometry('300x527')
         self.ws.config(bg=bgcolor)
         
         self.frame = Frame(self.ws,bg=bgcolor)
