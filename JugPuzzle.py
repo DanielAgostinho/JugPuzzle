@@ -1,6 +1,7 @@
-import matplotlib.pyplot as plt
-import tkinter as tk
+from matplotlib.pyplot import plot,legend,title,show
+from tkinter import Tk,Frame,Label,Entry,Button
 from math import ceil
+
 class Jug:
     def __init__(self,size,amount = 0):
         self.size = size
@@ -17,6 +18,15 @@ class Jug:
         self.amount = self.size
         return True
 
+    def switch(self,jug2):
+        x1,y1 = self.amount, jug2.amount
+        ylim =  jug2.size
+        pos1 = (max(x1-ylim+y1,0),min(x1+y1,ylim))
+        self.amount, jug2.amount = pos1
+        if pos1 == (x1,y1):
+            return False
+        return True
+
     def set(self,amount):
         self.amount = amount
 
@@ -25,15 +35,6 @@ class SetOfJugs:
     def __init__(self,jugs:list[Jug]) -> None:
         self.jugs = jugs
  
-    def switch(self,jug1:Jug,jug2:Jug):
-        x1,y1 = jug1.amount, jug2.amount
-        ylim =  jug2.size
-        pos1 = [max(x1-ylim+y1,0),min(x1+y1,ylim)]
-        jug1.amount, jug2.amount = pos1
-        if pos1 == (x1,y1):
-            return False
-        return True
-
     def set(self,amounts:list):
         for jug,amount in zip(self.jugs,amounts):
             jug.set(amount)
@@ -48,13 +49,6 @@ class Solver:
         self.positions = []
         self.Jugs = Jugs
         self.goal = goal
-
-    def savepos(self):
-        
-        if self.Jugs.amounts not in self.positions:
-            self.positions.append(self.Jugs.amounts)
-            return True
-        return False
 
     def goal_reached(self,amounts):
         return self.goal in amounts
@@ -76,7 +70,7 @@ class Solver:
             for j in self.Jugs.jugs:
                 if i is not j:
                     self.Jugs.set(amounts)
-                    valid = self.Jugs.switch(i,j)
+                    valid = i.switch(j)
                     if valid and self.Jugs.amounts not in self.positions:
                         pos.append(self.Jugs.amounts)
 
@@ -94,9 +88,8 @@ class Solver:
         for _ in range(maxiter):
             pos1 = []
             for p in lines:
-                x = p[-1]
-                if not self.goal_reached(x):
-                    response =self.iteration(x)
+                if not self.goal in p[-1]:
+                    response = self.iteration(p[-1])
                     if len(response) == 1:
                         p.append(response[0])
                     else:
@@ -117,29 +110,29 @@ class Solver:
 class Gui:
     def __init__(self):
         bgcolor = '#73A2FF'
-        self.ws = tk.Tk()
-        self.ws.title('PythonGuides')
+        self.ws = Tk()
+        self.ws.title('JugPuzzle')
         self.ws.geometry('300x200')
         self.ws.config(bg=bgcolor)
         
-        self.frame = tk.Frame(self.ws,bg=bgcolor)
+        self.frame = Frame(self.ws,bg=bgcolor)
 
-        tk.Label(self.frame, text="Jug 1",bg=bgcolor).grid(row=0, column=0)
-        tk.Label(self.frame, text="Jug 2",bg=bgcolor).grid(row=0, column=1)
+        Label(self.frame, text="Jug 1",bg=bgcolor).grid(row=0, column=0)
+        Label(self.frame, text="Jug 2",bg=bgcolor).grid(row=0, column=1)
         
 
-        self.jug1 = tk.Entry(self.frame)
+        self.jug1 = Entry(self.frame)
         self.jug1.grid(row=1, column=0)
-        self.jug2 = tk.Entry(self.frame)
+        self.jug2 = Entry(self.frame)
         self.jug2.grid(row=1, column=1)
 
-        tk.Label(self.frame, text="Goal: ",bg=bgcolor).grid(row=2, column=0)
-        self.goal = tk.Entry(self.frame)
+        Label(self.frame, text="Goal: ",bg=bgcolor).grid(row=2, column=0)
+        self.goal = Entry(self.frame)
         self.goal.grid(row=2, column=1)
         
-        self.errorLabel = tk.Label(self.frame, text="",fg='#FF0000',bg=bgcolor)
+        self.errorLabel = Label(self.frame, text="",fg='#FF0000',bg=bgcolor)
         self.errorLabel.grid(row=4, column=1,columnspan=2)
-        tk.Button(self.frame, text="Solve",command=self.solve).grid(row=3, columnspan=2, sticky='ew')
+        Button(self.frame, text="Solve",command=self.solve).grid(row=3, columnspan=2, sticky='ew')
 
         
         self.frame.pack(expand=True) 
@@ -150,7 +143,7 @@ class Gui:
         jug1 = self.jug1.get()
         jug2 = self.jug2.get()
         goal = self.goal.get()
-        if not jug1.isnumeric() and not jug2.isnumeric():
+        if not jug1.isnumeric() and not jug2.isnumeric() or int(jug1) == int(jug2):
             
             self.errorLabel.config(text='jug1 and jug2 are not valid')
         elif not jug1.isnumeric() or float(jug1) <= 0:
@@ -158,7 +151,7 @@ class Gui:
         elif not jug2.isnumeric() or float(jug2) <= 0:
             self.errorLabel.config(text="jug1 is not valid")
         else:
-            self.errorLabel.config(text=" ")
+            self.errorLabel.config(text="")
             if len(goal) == 0 or (goal.isnumeric() and float(goal) > 0 and float(goal) <= max(float(jug1),float(jug2))):
                 if goal == '':
                     solve(int(jug1),int(jug2))
@@ -179,11 +172,11 @@ def solve(a,b,m=False):
         for line in solutions:
             x = [i[0] for i in line]
             y = [i[1] for i in line]
-            plt.plot(x,y,'-*',label=len(line)-1)
+            plot(x,y,'-*',label=len(line)-1)
             
-        plt.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left", ncol=min(len(solutions),5))
-        plt.title(n)
-        plt.show()
+        legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left", ncol=min(len(solutions),5))
+        title(n)
+        show()
     
 if __name__ == '__main__':
     Gui()
