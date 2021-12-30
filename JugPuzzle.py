@@ -46,44 +46,9 @@ class SetOfJugs:
     def amounts(self):
         return [i.amount for i in self.jugs]
 
-class Node:
-    def __init__(self,value,parent = None):
-        self.value = value
-        self.parent = parent
-        if self.parent is not None:
-            self.parent.add(self)
-        self.childs:list[Node] = []
-
-    def get_chain(self):
-        
-        print(f'{self.parent.value if self.parent is not None else ""}->{self.value} -> {[i.value for i in self.childs]}')
-        for i in self.childs:
-            i.get_chain()
-    
-    def plot_chain(self):
-        v1 = self.value
-        for i in self.childs:
-            v2 = i.value
-            if not (v1[0] != v2[0] and v1[1] != v2[1] and abs((v1[1] - v2[1])/(v1[0] - v2[0])) != 1):
-
-                plt.plot([v1[0],v2[0]],[v1[1],v2[1]])
-            i.plot_chain()
-
-    def add(self,node):
-        self.childs.append(node)
-
-    def __dict__(self):
-        return {str(self.value):[i.__dict__() for i in self.childs]}
-
-    def l(self):
-        return self.value,[i.l() for i in self.childs]
-    
-
-
-
 class Solver:
     def __init__(self,Jugs:SetOfJugs,goal):
-        self.node = Node([0,0])
+        
         self.positions = []
         self.Jugs = Jugs
         self.goal = goal
@@ -128,39 +93,42 @@ class Solver:
         self.positions.append(self.Jugs.amounts)
         pos = self.iteration(self.Jugs.amounts)
         for p in pos:
-            lines.append((self.Jugs.amounts,p))
-        print(pos)
-        for _ in range(20):
+            lines.append([self.Jugs.amounts,p])
+        maxiter = (self.Jugs.jugs[0].size+1)*(self.Jugs.jugs[1].size+1)-(self.Jugs.jugs[0].size-1)*(self.Jugs.jugs[1].size-1)+1
+        for _ in range(maxiter):
             pos1 = []
-            for p in pos:
-                if not self.goal_reached(p):
-                    response =self.iteration(p)
-                    for r in response:
-                        lines.append((p,r))
+            for p in lines:
+                x = p[-1]
+                if not self.goal_reached(x):
+                    response =self.iteration(x)
+                    if len(response) == 1:
+                        p.append(response[0])
+                    else:
+                        p = lines.pop(lines.index(p))
+                        for r in response:
+                            q = p[:]
+                            q.append(r)
+                            lines.append(q)                            
+
                     pos1.extend(response)
+                    
             pos = pos1
             if not pos:
-                break
-            print(pos)
-        print(len(self.positions))
+                break       
         return lines
         
 
+Setj = SetOfJugs([Jug(9),Jug(5)])       
+for n in range(1,max([i.size for i in Setj.jugs]) + 1):
+    Setj.set([0]*len(Setj.jugs))
+    Solve = Solver(Setj,n)
+    solutions = Solve.solve()
+
+    for line in solutions:
+        x = [i[0] for i in line]
+        y = [i[1] for i in line]
+        plt.plot(x,y,'-*',label=len(line)-1)
         
-
-Setj = SetOfJugs([Jug(9),Jug(5)])
-Solve = Solver(Setj,7)
-solutions = Solve.solve()
-
-for sol in solutions:
-    plt.plot((sol[0][0],sol[1][0]),(sol[0][1],sol[1][1]))
-plt.show()
-
-
-
-
-
-#results = Solve.node.l()
-
-#print(results)
-
+    plt.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left", ncol=min(len(solutions),5))
+    plt.title(n)
+    plt.show()
