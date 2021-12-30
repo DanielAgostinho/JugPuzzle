@@ -11,12 +11,11 @@ class Jug:
         self.amount = 0
         return x
 
-    def fill(self,amount = None):
-        if amount is None:
-            amount = self.size
-        self.amount = min(amount + self.amount,self.size)
-        
-        return max(0,amount - self.amount)
+    def fill(self):
+        if self.amount == self.size:
+            return False
+        self.amount = self.size
+        return True
 
     def set(self,amount):
         self.amount = amount
@@ -25,19 +24,15 @@ class Jug:
 class SetOfJugs:
     def __init__(self,jugs:list[Jug]) -> None:
         self.jugs = jugs
-
-    def fill(self,index):
-        self.jugs[index].fill()
-
-    def empty(self,index):
-        self.jugs[index].empty()
-
-    def switch(self,index1,index2):
-        x1,y1 = self.jugs[index1].amount, self.jugs[index2].amount
-        ylim =  self.jugs[index2].size
+ 
+    def switch(self,jug1:Jug,jug2:Jug):
+        x1,y1 = jug1.amount, jug2.amount
+        ylim =  jug2.size
         pos1 = [max(x1-ylim+y1,0),min(x1+y1,ylim)]
-
-        self.jugs[index1].amount, self.jugs[index2].amount = pos1
+        jug1.amount, jug2.amount = pos1
+        if pos1 == (x1,y1):
+            return False
+        return True
 
     def set(self,amounts:list):
         for jug,amount in zip(self.jugs,amounts):
@@ -103,78 +98,69 @@ class Solver:
     def goal_reached(self,amounts):
         return self.goal in amounts
 
-    def iteration(self,x,y,node,n=0):
-        #print(' '*n +'start of branch',x,y)
-        NNode = Node([x,y],node)
-        if self.goal_reached([x,y]):
-            return
-        for i in range(len(self.Jugs.jugs)):
-            self.Jugs.set([x,y])
-            self.Jugs.fill(i)
-            valid = self.savepos()
-            if valid:
-                #print(' '*n +'Fill ',i,self.Jugs.amounts)
-                self.iteration(*self.Jugs.amounts,NNode,n+1)
-
-
-            for k in range(len(self.Jugs.jugs)):
-                if i != k:
-                    self.Jugs.set([x,y])
-                    self.Jugs.switch(i,k)
-                    valid = self.savepos()
-                    if self.Jugs.amounts == [0,0]:
-                        valid = False
-                    if valid:
-                        #print(' '*n +'Switch',i,k,self.Jugs.amounts)
-                        self.iteration(*self.Jugs.amounts,NNode,n+1)
-
-            self.Jugs.set([x,y])
-            self.Jugs.empty(i)
-            valid = self.savepos()
-            if valid:
-                #print(' '*n +'empty',i,self.Jugs.amounts)
-                self.iteration(*self.Jugs.amounts,NNode,n+1)        
-
+    def iteration(self,amounts):
+        pos = []
         
+        for i in self.Jugs.jugs:
+            self.Jugs.set(amounts)
+            valid = i.fill()
+            if valid and self.Jugs.amounts not in self.positions:
+                pos.append(self.Jugs.amounts)
+
+            self.Jugs.set(amounts)
+            valid = i.empty()
+            if valid and self.Jugs.amounts not in self.positions:
+                pos.append(self.Jugs.amounts)
             
+            for j in self.Jugs.jugs:
+                if i is not j:
+                    self.Jugs.set(amounts)
+                    valid = self.Jugs.switch(i,j)
+                    if valid and self.Jugs.amounts not in self.positions:
+                        pos.append(self.Jugs.amounts)
 
-        Node(self.Jugs.amounts,node)
-        #print(' '*n +'end of branch',self.Jugs.amounts)
-
-    def optimize(self):
-        for i in range(len(self.positions)-3):
-            pos1 = self.positions[i]
-            pos2 = self.positions[i+1]
-            pos3 = self.positions[i+2]
-            if pos1[1] == pos2[1] == pos3[1]:
-                self.positions.pop(i+1)
+        self.Jugs.set(amounts)
+        self.positions.extend(pos)
+        return pos
 
     def solve(self):
-        x,y = self.Jugs.amounts
-        self.iteration(x,y,self.node)
-        #self.optimize()
-        return self.positions
+        lines = []
+        self.positions.append(self.Jugs.amounts)
+        pos = self.iteration(self.Jugs.amounts)
+        for p in pos:
+            lines.append((self.Jugs.amounts,p))
+        print(pos)
+        for _ in range(20):
+            pos1 = []
+            for p in pos:
+                if not self.goal_reached(p):
+                    response =self.iteration(p)
+                    for r in response:
+                        lines.append((p,r))
+                    pos1.extend(response)
+            pos = pos1
+            if not pos:
+                break
+            print(pos)
+        print(len(self.positions))
+        return lines
+        
 
         
 
 Setj = SetOfJugs([Jug(9),Jug(5)])
 Solve = Solver(Setj,7)
-Solve.solve()
+solutions = Solve.solve()
 
-#Solve.node.get_chain()
-
-#for index in range(len(Solve.positions)-1):
-#    p1,p2 = (Solve.positions[index],Solve.positions[index+1])
-#    plt.plot([p1[0],p2[0]],[p1[1],p2[1]])
-
-Solve.node.plot_chain()
+for sol in solutions:
+    plt.plot((sol[0][0],sol[1][0]),(sol[0][1],sol[1][1]))
 plt.show()
 
 
 
 
 
-results = Solve.node.l()
+#results = Solve.node.l()
 
-print(results)
+#print(results)
 
