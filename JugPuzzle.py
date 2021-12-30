@@ -38,10 +38,6 @@ class SetOfJugs:
         for jug,amount in zip(self.jugs,amounts):
             jug.set(amount)
 
-    def __str__(self) -> str:
-        s = [i.amount for i in self.jugs]
-        return str(s)
-
     @property
     def amounts(self):
         return [i.amount for i in self.jugs]
@@ -165,13 +161,13 @@ class Gui:
             self.errorLabel.config(text=" ")
             if len(goal) == 0 or (goal.isnumeric() and float(goal) > 0 and float(goal) <= max(float(jug1),float(jug2))):
                 if goal == '':
-                    main(int(jug1),int(jug2))
+                    solve(int(jug1),int(jug2))
                 else:
-                    main(int(jug1),int(jug2),int(goal))
+                    solve(int(jug1),int(jug2),int(goal))
             else:
                 self.errorLabel.config(text="Goal is not valid")
 
-def main(a,b,m=False):
+def solve(a,b,m=False):
     Setj = SetOfJugs([Jug(a),Jug(b)])       
     for n in range(1,int(ceil(max([i.size for i in Setj.jugs]) + 1))):
         if m is not False and n != m:
@@ -188,5 +184,6 @@ def main(a,b,m=False):
         plt.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left", ncol=min(len(solutions),5))
         plt.title(n)
         plt.show()
-
-Gui()
+    
+if __name__ == '__main__':
+    Gui()
